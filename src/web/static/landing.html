@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>笨猫MT5智能策略交易 - AI驱动的量化交易系统</title>
+<link rel="icon" href="/static/benmao.jpg" type="image/jpeg">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{font-family:'Inter',system-ui,sans-serif;scroll-behavior:smooth}
+.glow{box-shadow:0 0 60px rgba(16,185,129,.12)}
+.glow-sm{box-shadow:0 0 24px rgba(16,185,129,.08)}
+.check{display:inline-flex;align-items:center;gap:.375rem}
+.check::before{content:'';width:.875rem;height:.875rem;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 20 20' fill='%2334d399' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z' clip-rule='evenodd'/%3E%3C/svg%3E");background-size:contain;background-repeat:no-repeat;flex-shrink:0}
+</style>
+</head>
+<body class="bg-gray-950 text-gray-300">
+
+<!-- ==================== Hero ==================== -->
+<section class="relative overflow-hidden">
+  <div class="absolute inset-0 bg-gradient-to-b from-emerald-950/30 via-transparent to-transparent"></div>
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-emerald-500/5 rounded-full blur-3xl"></div>
+  <div class="relative max-w-6xl mx-auto px-6 pt-8">
+    <nav class="flex items-center justify-between mb-20">
+      <div class="flex items-center gap-3">
+        <img src="/static/benmao.jpg" class="w-9 h-9 rounded-xl object-cover">
+        <span class="text-lg font-bold text-gray-100">笨猫MT5</span>
+      </div>
+      <div class="flex items-center gap-6">
+        <a href="#features" class="text-sm text-gray-400 hover:text-gray-200 transition hidden sm:inline">功能</a>
+        <a href="#strategies" class="text-sm text-gray-400 hover:text-gray-200 transition hidden sm:inline">策略</a>
+        <a href="#pricing" class="text-sm text-gray-400 hover:text-gray-200 transition hidden sm:inline">定价</a>
+        <a href="#steps" class="text-sm text-gray-400 hover:text-gray-200 transition hidden sm:inline">教程</a>
+        <a href="/dashboard" class="text-sm text-emerald-400 hover:text-emerald-300 transition font-medium">进入系统 →</a>
+      </div>
+    </nav>
+    <div class="text-center pb-28">
+      <div class="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 mb-8">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-sm text-emerald-400 font-medium">AI 驱动 · 全自动交易 · 实时风控</span>
+      </div>
+      <h1 class="text-5xl md:text-7xl font-black text-gray-50 mb-3 leading-tight">笨猫MT5</h1>
+      <h1 class="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-200 mb-8 leading-tight">智能策略交易</h1>
+      <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+        基于 AI 宏观分析的量化交易系统，支持多策略引擎、实时风控、K线分析，<br class="hidden md:block">策略云端热更新，无需重装即可获取最新策略
+      </p>
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a href="/static/download/BenmaoMT5-Setup.exe" class="group flex items-center gap-3 bg-emerald-600 hover:bg-emerald-500 px-8 py-4 rounded-xl font-bold text-white transition shadow-xl shadow-emerald-900/30 text-lg">
+          <svg class="w-6 h-6 transition group-hover:translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          下载安装包
+        </a>
+        <a href="https://luoye.chyidc.cn/shop/2B5FKETT" target="_blank" class="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 px-8 py-4 rounded-xl font-semibold text-gray-200 transition text-lg">
+          购买卡密
+        </a>
+      </div>
+      <div class="flex items-center justify-center gap-8 mt-12 text-sm text-gray-500">
+        <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Windows 10/11</span>
+        <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>MT5 客户端</span>
+        <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>一键部署</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== Features ==================== -->
+<section id="features" class="py-24">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl md:text-4xl font-bold text-gray-100 mb-4">核心功能</h2>
+      <p class="text-gray-500 text-lg">为量化交易量身打造的全方位工具</p>
+    </div>
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 hover:border-emerald-800/50 transition glow-sm">
+        <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-5">
+          <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.248 1v1M5.752 5v1m14.496 6v1M3.752 12v1m6.248-6.248v1M12 21a9 9 0 100-18 9 9 0 000 18z"/></svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-100 mb-3">智能策略引擎</h3>
+        <p class="text-gray-400 leading-relaxed">6种策略引擎可选，AI宏观方向分析，布林带+RSI+趋势多维度信号融合，自动开平仓</p>
+      </div>
+      <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 hover:border-emerald-800/50 transition glow-sm">
+        <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-5">
+          <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-100 mb-3">策略云端热更新</h3>
+        <p class="text-gray-400 leading-relaxed">策略文件云端同步，自动检测并下载最新版本，无需重新安装exe，策略迭代零感知升级</p>
+      </div>
+      <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 hover:border-emerald-800/50 transition glow-sm">
+        <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-5">
+          <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-100 mb-3">实时风控</h3>
+        <p class="text-gray-400 leading-relaxed">多层级风控体系：单笔止损、日内最大亏损、最大持仓数、交易时段限制，紧急停止一键平仓</p>
+      </div>
+      <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 hover:border-emerald-800/50 transition glow-sm">
+        <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-5">
+          <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-100 mb-3">K线与审计</h3>
+        <p class="text-gray-400 leading-relaxed">专业K线图表+多周期切换，净值曲线、每日统计、原因分布、盈亏比等全面交易审计</p>
+      </div>
+      <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 hover:border-emerald-800/50 transition glow-sm">
+        <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-5">
+          <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.547a1 1 0 012.35 0l1.52 5.93a1 1 0 00.89.8h6.09a1 1 0 01.51 1.86l-4.93 3.58a1 1 0 00-.34 1.02l1.52 5.93a1 1 0 01-1.88.78l-4.93-3.58a1 1 0 00-1.16 0l-4.93 3.58a1 1 0 01-1.88-.78l1.52-5.93a1 1 0 00-.34-1.02l-4.93-3.58a1 1 0 01.51-1.86h6.09a1 1 0 00.89-.8l1.52-5.93z"/></svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-100 mb-3">参数热更新</h3>
+        <p class="text-gray-400 leading-relaxed">无需重启，Dashboard实时调整策略参数，引擎下一周期自动应用，安全限制防误操作</p>
+      </div>
+      <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 hover:border-emerald-800/50 transition glow-sm">
+        <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-5">
+          <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-100 mb-3">邮件报警</h3>
+        <p class="text-gray-400 leading-relaxed">开仓、平仓、风控触发等关键事件实时邮件通知，随时掌握交易动态，不漏任何信号</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== Strategies ==================== -->
+<section id="strategies" class="py-24 bg-gray-900/30">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl md:text-4xl font-bold text-gray-100 mb-4">策略引擎</h2>
+      <p class="text-gray-500 text-lg">多种策略引擎，满足不同交易风格 · 云端自动更新</p>
+    </div>
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="relative bg-gray-900/80 border border-emerald-800/40 rounded-2xl p-6 glow-sm">
+        <div class="absolute top-4 right-4 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-800/50">推荐</div>
+        <h3 class="text-xl font-bold text-gray-100 mb-2">B2 策略</h3>
+        <p class="text-sm text-emerald-400/70 mb-3">趋势跟踪 + 均值回归</p>
+        <p class="text-sm text-gray-400 leading-relaxed">H1宏观方向判定 + 布林带触及 + RSI超买超卖 + ATR动态止损止盈，适合大多数行情</p>
+      </div>
+      <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 hover:border-gray-700 transition">
+        <h3 class="text-xl font-bold text-gray-100 mb-2">B1 策略</h3>
+        <p class="text-sm text-gray-500 mb-3">经典布林带回归</p>
+        <p class="text-sm text-gray-400 leading-relaxed">经典布林带回归策略，适合震荡行情，信号简单直观</p>
+      </div>
+      <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 hover:border-gray-700 transition">
+        <h3 class="text-xl font-bold text-gray-100 mb-2">V2 策略</h3>
+        <p class="text-sm text-gray-500 mb-3">增强趋势跟踪</p>
+        <p class="text-sm text-gray-400 leading-relaxed">增强版趋势跟踪策略，更灵敏的信号响应</p>
+      </div>
+      <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 hover:border-gray-700 transition">
+        <h3 class="text-xl font-bold text-gray-100 mb-2">V3 策略</h3>
+        <p class="text-sm text-gray-500 mb-3">优化出场逻辑</p>
+        <p class="text-sm text-gray-400 leading-relaxed">V2 基础上优化了出场逻辑，提高盈利效率</p>
+      </div>
+      <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 hover:border-gray-700 transition">
+        <h3 class="text-xl font-bold text-gray-100 mb-2">V4 策略</h3>
+        <p class="text-sm text-gray-500 mb-3">多时间框架分析</p>
+        <p class="text-sm text-gray-400 leading-relaxed">多时间框架分析策略，更稳健的入场判断</p>
+      </div>
+      <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 hover:border-gray-700 transition">
+        <h3 class="text-xl font-bold text-gray-100 mb-2">V5 策略</h3>
+        <p class="text-sm text-gray-500 mb-3">综合维度优化</p>
+        <p class="text-sm text-gray-400 leading-relaxed">最新一代策略，综合多维度指标优化</p>
+      </div>
+    </div>
+    <div class="text-center mt-10">
+      <div class="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-5 py-2">
+        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        <span class="text-sm text-emerald-400 font-medium">策略云端热更新 — 新策略发布后自动同步，无需重新安装</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== Pricing ==================== -->
+<section id="pricing" class="py-24">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl md:text-4xl font-bold text-gray-100 mb-4">套餐定价</h2>
+      <p class="text-gray-500 text-lg">按需选择，灵活使用</p>
+    </div>
+    <div class="grid md:grid-cols-3 gap-6">
+      <!-- 日卡 -->
+      <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 hover:border-gray-700 transition flex flex-col">
+        <div class="text-sm font-medium text-gray-400 mb-4">日卡</div>
+        <div class="flex items-baseline gap-1 mb-6">
+          <span class="text-4xl font-black text-gray-100">¥28</span>
+          <span class="text-gray-500">/天</span>
+        </div>
+        <div class="space-y-3 mb-8 flex-1">
+          <div class="check text-sm text-gray-400">全部策略引擎</div>
+          <div class="check text-sm text-gray-400">实时风控</div>
+          <div class="check text-sm text-gray-400">K线与交易审计</div>
+          <div class="check text-sm text-gray-400">参数热更新</div>
+          <div class="check text-sm text-gray-400">策略云端热更新</div>
+          <div class="check text-sm text-gray-400">邮件报警</div>
+        </div>
+        <a href="https://luoye.chyidc.cn/shop/2B5FKETT" target="_blank" class="block w-full text-center bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl py-3 font-semibold text-gray-200 transition">立即购买</a>
+      </div>
+      <!-- 月卡 -->
+      <div class="relative bg-gray-900/50 border border-emerald-800/50 rounded-2xl p-8 glow-sm flex flex-col">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-4 py-1 rounded-full bg-emerald-500 text-gray-950">最受欢迎</div>
+        <div class="text-sm font-medium text-emerald-400 mb-4 mt-1">月卡</div>
+        <div class="flex items-baseline gap-1 mb-2">
+          <span class="text-4xl font-black text-gray-100">¥128</span>
+          <span class="text-gray-500">/月</span>
+        </div>
+        <div class="text-xs text-emerald-400/70 mb-6">≈ ¥4.3/天，省 76%</div>
+        <div class="space-y-3 mb-8 flex-1">
+          <div class="check text-sm text-gray-300">全部策略引擎</div>
+          <div class="check text-sm text-gray-300">实时风控</div>
+          <div class="check text-sm text-gray-300">K线与交易审计</div>
+          <div class="check text-sm text-gray-300">参数热更新</div>
+          <div class="check text-sm text-gray-300">策略云端热更新</div>
+          <div class="check text-sm text-gray-300">邮件报警</div>
+          <div class="check text-sm text-emerald-400">优先体验新策略</div>
+        </div>
+        <a href="https://luoye.chyidc.cn/shop/2B5FKETT" target="_blank" class="block w-full text-center bg-emerald-600 hover:bg-emerald-500 rounded-xl py-3 font-semibold text-white transition shadow-lg shadow-emerald-900/20">立即购买</a>
+      </div>
+      <!-- 年卡 -->
+      <div class="relative bg-gray-900/50 border border-gray-800 rounded-2xl p-8 hover:border-gray-700 transition flex flex-col">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-4 py-1 rounded-full bg-amber-500 text-gray-950">最划算</div>
+        <div class="text-sm font-medium text-amber-400 mb-4 mt-1">年卡</div>
+        <div class="flex items-baseline gap-1 mb-2">
+          <span class="text-4xl font-black text-gray-100">¥998</span>
+          <span class="text-gray-500">/年</span>
+        </div>
+        <div class="text-xs text-amber-400/70 mb-6">≈ ¥2.7/天，省 90%</div>
+        <div class="space-y-3 mb-8 flex-1">
+          <div class="check text-sm text-gray-300">全部策略引擎</div>
+          <div class="check text-sm text-gray-300">实时风控</div>
+          <div class="check text-sm text-gray-300">K线与交易审计</div>
+          <div class="check text-sm text-gray-300">参数热更新</div>
+          <div class="check text-sm text-gray-300">策略云端热更新</div>
+          <div class="check text-sm text-gray-300">邮件报警</div>
+          <div class="check text-sm text-amber-400">优先体验新策略</div>
+          <div class="check text-sm text-amber-400">专属技术支持</div>
+        </div>
+        <a href="https://luoye.chyidc.cn/shop/2B5FKETT" target="_blank" class="block w-full text-center bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl py-3 font-semibold text-gray-200 transition">立即购买</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== Steps ==================== -->
+<section id="steps" class="py-24 bg-gray-900/30">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl md:text-4xl font-bold text-gray-100 mb-4">快速上手</h2>
+      <p class="text-gray-500 text-lg">4步开始智能交易</p>
+    </div>
+    <div class="grid md:grid-cols-4 gap-8">
+      <div class="text-center">
+        <div class="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-emerald-800/30">
+          <span class="text-2xl font-black text-emerald-400">1</span>
+        </div>
+        <h3 class="text-lg font-bold text-gray-100 mb-2">安装 MT5</h3>
+        <p class="text-sm text-gray-400">下载安装 MetaTrader 5 客户端，登录你的交易账户</p>
+      </div>
+      <div class="text-center">
+        <div class="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-emerald-800/30">
+          <span class="text-2xl font-black text-emerald-400">2</span>
+        </div>
+        <h3 class="text-lg font-bold text-gray-100 mb-2">配置账户</h3>
+        <p class="text-sm text-gray-400">安装笨猫MT5，填入MT5账号密码和服务器信息</p>
+      </div>
+      <div class="text-center">
+        <div class="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-emerald-800/30">
+          <span class="text-2xl font-black text-emerald-400">3</span>
+        </div>
+        <h3 class="text-lg font-bold text-gray-100 mb-2">输入卡密</h3>
+        <p class="text-sm text-gray-400">输入购买的卡密验证登录，授权成功即可使用</p>
+      </div>
+      <div class="text-center">
+        <div class="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-emerald-800/30">
+          <span class="text-2xl font-black text-emerald-400">4</span>
+        </div>
+        <h3 class="text-lg font-bold text-gray-100 mb-2">开始交易</h3>
+        <p class="text-sm text-gray-400">选择策略、调整参数，系统自动运行并实时监控</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== Download CTA ==================== -->
+<section class="py-24">
+  <div class="max-w-4xl mx-auto px-6 text-center">
+    <div class="bg-gradient-to-b from-emerald-950/40 to-gray-900/50 border border-emerald-800/30 rounded-3xl p-12 md:p-16 glow">
+      <h2 class="text-3xl md:text-4xl font-bold text-gray-100 mb-4">开始使用笨猫MT5</h2>
+      <p class="text-gray-400 text-lg mb-8">下载安装包，配合MT5客户端即可开始智能量化交易</p>
+      <a href="/static/download/BenmaoMT5-Setup.exe" class="inline-flex items-center gap-3 bg-emerald-600 hover:bg-emerald-500 px-10 py-4 rounded-xl font-bold text-white transition shadow-xl shadow-emerald-900/30 text-lg">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        下载 BenmaoMT5-Setup.exe
+      </a>
+      <p class="text-sm text-gray-600 mt-6">需要先安装 MetaTrader 5 客户端 · Windows 10/11</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== Footer ==================== -->
+<footer class="border-t border-gray-800/50 py-12">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <img src="/static/benmao.jpg" class="w-7 h-7 rounded-lg object-cover">
+        <span class="text-sm font-semibold text-gray-400">笨猫MT5智能策略交易</span>
+      </div>
+      <div class="flex items-center gap-6">
+        <a href="https://luoye.chyidc.cn/shop/2B5FKETT" target="_blank" class="text-sm text-gray-500 hover:text-emerald-400 transition">购买卡密</a>
+        <a href="/dashboard" class="text-sm text-gray-500 hover:text-emerald-400 transition">进入系统</a>
+      </div>
+      <p class="text-sm text-gray-600">© 2025 笨猫MT5. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

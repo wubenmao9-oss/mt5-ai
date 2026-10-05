@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Benmao MT5-Ai</title>
+<link rel="icon" href="/static/benmao.jpg" type="image/jpeg">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*{font-family:'Inter',system-ui,sans-serif}
+.tab-active{border-bottom:2px solid #10b981;color:#e5e7eb}
+.tab-inactive{border-bottom:2px solid transparent;color:#6b7280}
+.tab-inactive:hover{color:#9ca3af}
+#toast-box{position:fixed;top:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none}
+#toast-box>div{pointer-events:auto;border-radius:0.75rem;padding:0.75rem 1rem;min-width:280px;max-width:420px;backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,0.4);animation:toastIn .3s ease-out;display:flex;align-items:flex-start;gap:0.5rem;font-size:0.875rem;line-height:1.4}
+#toast-box>div.out{animation:toastOut .25s ease-in forwards}
+@keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateX(40px)}}
+.toast-success{background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#6ee7b7}
+.toast-error{background:rgba(244,63,94,0.15);border:1px solid rgba(244,63,94,0.3);color:#fda4af}
+.toast-warn{background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);color:#fde68a}
+.toast-info{background:rgba(107,114,128,0.2);border:1px solid rgba(107,114,128,0.3);color:#d1d5db}
+#confirm-overlay{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;animation:fadeIn .2s ease-out}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+#confirm-box{background:#1f2937;border:1px solid #374151;border-radius:1rem;padding:1.5rem;max-width:400px;width:90%;box-shadow:0 16px 48px rgba(0,0,0,0.5)}
+</style>
+</head>
+<body class="bg-gray-950 text-gray-300 min-h-screen">
+<div id="app"></div><div id="toast-box"></div>
+<script>/* toast system check */window.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{if(typeof toast==='function')toast('MT5-Ai Dashboard ready','success');else console.error('toast not defined')},500)});</script>
+<script>
+const API="";const TARGET=10.0;let currentTab="positions";let lang=localStorage.getItem("lang")||"en";let _layoutReady=false;
+let _authed=false,_authVip=0,_authKmtype="",_authKtype="",_authNote="";
+let _curSymbol="XAUUSD";
+
+const T={"MT5-Ai Smart Engine":{zh:"笨猫MT5智能策略交易"},"v2.0 B2 Strategy":{zh:"v2.0 B2 策略"},Killswitch:{zh:"紧急停止"},Positions:{zh:"持仓"},"Trade Log":{zh:"交易日志"},History:{zh:"历史记录"},Decisions:{zh:"决策记录"},Config:{zh:"参数设置"},Chart:{zh:"K线图表"},Audit:{zh:"交易审计"},"No active positions":{zh:"暂无活跃持仓"},"Waiting for signals...":{zh:"等待信号中..."},"Symbol / Dir":{zh:"品种 / 方向"},Vol:{zh:"手数"},"Open -> Current":{zh:"开仓 -> 现价"},"SL / Status":{zh:"止损 / 状态"},PnL:{zh:"盈亏"},Duration:{zh:"持仓时间"},"Break-even":{zh:"保本"},Locked:{zh:"锁定盈利"},Initial:{zh:"初始"},"No trade records":{zh:"暂无交易记录"},Time:{zh:"时间"},Direction:{zh:"方向"},Strategy:{zh:"策略"},Price:{zh:"价格"},Reason:{zh:"原因"},"No closed trade records":{zh:"暂无已平仓记录"},"Open Time":{zh:"开仓时间"},Dir:{zh:"方向"},Open:{zh:"开仓价"},Close:{zh:"平仓价"},"No decision records":{zh:"暂无决策记录"},"Active Positions":{zh:"活跃持仓"},"Closed Trades":{zh:"已平仓交易"},Account:{zh:"账户"},Equity:{zh:"净值"},Balance:{zh:"余额"},"Free Margin":{zh:"可用保证金"},"Daily Progress":{zh:"每日进度"},"Realized PnL":{zh:"已实现盈亏"},Target:{zh:"目标"},Trades:{zh:"交易次数"},Drawdown:{zh:"回撤"},"H1 Macro":{zh:"H1 宏观"},Bullish:{zh:"看多"},Bearish:{zh:"看空"},Neutral:{zh:"中性"},Mode:{zh:"模式"},Silence:{zh:"静默原因"},"Win Rate":{zh:"胜率"},"Total PnL":{zh:"总盈亏"},Running:{zh:"运行中"},Sleeping:{zh:"休眠中"},Killed:{zh:"已停止"},Error:{zh:"错误"},Init:{zh:"初始化"},Unknown:{zh:"未知"},"Connection Error":{zh:"连接错误"},"Cannot reach API server. Make sure run.py is started.":{zh:"无法连接 API 服务器，请确认 run.py 已启动。"},"Kill all positions and cancel all orders?":{zh:"确认平掉所有持仓并取消所有挂单？"},positions:{zh:"个持仓"},orders:{zh:"个挂单"},"Killswitch failed - check server":{zh:"紧急停止失败 - 请检查服务器"},"Risk Parameters":{zh:"风控参数"},"Strategy Parameters":{zh:"策略参数"},"Session Parameters":{zh:"交易时段"},"Apply Changes":{zh:"应用修改"},"Confirm Config Changes":{zh:"确认参数修改"},"Are you sure?":{zh:"确认应用这些修改吗？"},"Changes pending... Engine will apply on next cycle.":{zh:"修改已提交，引擎将在下个周期应用。"},"Config update failed":{zh:"参数更新失败"},"No changes":{zh:"无变更"},"Loading config...":{zh:"加载参数中..."},"Equity Curve":{zh:"净值曲线"},"Daily Stats":{zh:"每日统计"},"Reason Distribution":{zh:"原因分布"},"Recent Trades":{zh:"近期交易"},Indicators:{zh:"指标"},"Profit Factor":{zh:"盈亏比"},"Avg Win":{zh:"平均盈利"},"Avg Loss":{zh:"平均亏损"},Day:{zh:"日期"},Count:{zh:"次数"},"No audit data":{zh:"暂无审计数据"},"Date Filter":{zh:"日期筛选"},"From":{zh:"从"},"To":{zh:"至"},"Apply":{zh:"应用"},"Daily PnL Detail":{zh:"每日盈亏详情"},"Date":{zh:"日期"},"Switch Strategy":{zh:"切换策略"},"Current":{zh:"当前"},"Switch to":{zh:"切换至"},"Confirm switch?":{zh:"确认切换？"},"Strategy switch pending...":{zh:"策略切换已提交..."},"Strategy switch failed":{zh:"策略切换失败"},"Test Connection":{zh:"测试连接"},"Testing...":{zh:"测试中..."},"MT5 Connected":{zh:"MT5 已连接"},"MT5 Disconnected":{zh:"MT5 未连接"},"Symbol valid":{zh:"品种有效"},"Symbol invalid":{zh:"品种无效"},Settings:{zh:"系统设置"},"MT5 Account":{zh:"MT5 账户"},"Email Alerts":{zh:"邮件报警"},"Save & Restart":{zh:"保存并重启"},"Saving...":{zh:"保存中..."},"Config saved. Restarting...":{zh:"配置已保存，正在重启..."},"Restart failed":{zh:"重启失败"},"Confirm restart?":{zh:"确认重启？"},"This will restart the entire application.":{zh:"这将重启整个应用程序。"},"Enter Card Key":{zh:"请输入卡密"},"Verify & Login":{zh:"验证登录"},"Verifying...":{zh:"验证中..."},"Card Auth":{zh:"卡密验证"},"License":{zh:"授权信息"},"Remaining":{zh:"剩余时间"},"Permanent":{zh:"永久"},"Expired":{zh:"已到期"},"Logout":{zh:"退出登录"},"Session expired, please re-login":{zh:"会话已过期，请重新登录"},Cancel:{zh:"取消"},Confirm:{zh:"确认"},"Buy Card Key":{zh:"购买卡密"},Close:{zh:"平仓"},"Close All Profitable":{zh:"一键平盈利仓"},Action:{zh:"操作"},"Test Email":{zh:"测试邮件"}};
+function t(k){if(lang==="zh"&&T[k]&&T[k].zh)return T[k].zh;return k}
+
+// ==================== Toast & Confirm ====================
+const _icons={success:'<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>',error:'<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>',warn:'<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.14 14.1A1 1 0 002.93 19.5h18.14a1 1 0 00.87-1.54l-8.14-14.1a1 1 0 00-1.72 0z"/></svg>',info:'<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg>'};
+function toast(msg,type='info',ms=3500){
+  const box=document.getElementById('toast-box');if(!box)return;
+  const d=document.createElement('div');d.className='toast-'+type;
+  d.innerHTML=(_icons[type]||_icons.info)+'<span>'+msg+'</span>';
+  box.appendChild(d);
+  setTimeout(()=>{d.classList.add('out');setTimeout(()=>d.remove(),300)},ms);
+}
+function customConfirm(title,msg){
+  return new Promise(resolve=>{
+    const ov=document.createElement('div');ov.id='confirm-overlay';
+    ov.innerHTML=`<div id="confirm-box"><div class="text-base font-semibold text-gray-100 mb-2">${title}</div><div class="text-sm text-gray-400 mb-5 whitespace-pre-line">${msg}</div><div class="flex justify-end gap-3"><button id="cf-cancel" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-700 hover:bg-gray-600 text-gray-300 transition border border-gray-600">${t("Cancel")||"Cancel"}</button><button id="cf-ok" class="px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 hover:bg-emerald-500 text-white transition">${t("Confirm")||"Confirm"}</button></div></div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('#cf-cancel').onclick=()=>{ov.remove();resolve(false)};
+    ov.querySelector('#cf-ok').onclick=()=>{ov.remove();resolve(true)};
+    ov.addEventListener('keydown',e=>{if(e.key==='Escape'){ov.remove();resolve(false)}});
+    ov.querySelector('#cf-ok').focus();
+  });
+}
+
+async function get(p){try{const r=await fetch(API+p);if(r.status===401&&!p.startsWith("/api/auth/")){_authed=false;renderLoginGate();return null}if(!r.ok)throw new Error("HTTP "+r.status);const j=await r.json();return j.data||j}catch(e){console.error("API:",p,e);return null}}
+async function post(p,body){try{const o={method:"POST",headers:{"Content-Type":"application/json"}};if(body)o.body=JSON.stringify(body);const r=await fetch(API+p,o);if(r.status===401&&!p.startsWith("/api/auth/")){_authed=false;renderLoginGate();return null}if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}catch(e){console.error("API:",p,e);return null}}
+function fmt(v){return(v??0).toFixed(2)}
+function pnlC(v){return v>0?"text-emerald-400":v<0?"text-rose-400":"text-gray-400"}
+function iso2u(s){return Math.floor(new Date(s).getTime()/1000)}
+function stLbl(s){const m={RUNNING:`bg-emerald-500 ${t("Running")}`,SLEEP:`bg-amber-500 ${t("Sleeping")}`,KILLED:`bg-rose-500 ${t("Killed")}`,ERROR:`bg-red-600 ${t("Error")}`,INIT:`bg-blue-500 ${t("Init")}`};return m[s]||`bg-gray-500 ${t("Unknown")}`}
+function today(){return new Date().toISOString().slice(0,10)}
+function daysAgo(n){const d=new Date();d.setDate(d.getDate()-n);return d.toISOString().slice(0,10)}
+
+// ==================== Layout (rendered once) ====================
+function renderLayout(){
+  document.getElementById("app").innerHTML=`
+  <div class="max-w-7xl mx-auto p-6">
+    <div id="header"></div>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="lg:col-span-3 space-y-6" id="sidebar"></div>
+      <div class="lg:col-span-9">
+        <div class="bg-gray-900 rounded-xl border border-gray-800 h-full flex flex-col">
+          <div id="main-title" class="px-6 py-5 border-b border-gray-800 flex justify-between items-center"></div>
+          <div id="tab-bar"></div>
+          <div class="overflow-x-auto flex-1" id="mc"></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  _layoutReady=true;
+}
+
+// ==================== Header ====================
+function renderHeader(st){
+  const el=document.getElementById("header");if(!el)return;
+  const sl=stLbl(st.engine_state);
+  const curS=st.active_strategy||"B2";
+  const stratLabel=lang==="zh"?`v2.0 <span class="text-emerald-400 font-semibold">${curS}</span> 策略`:`v2.0 <span class="text-emerald-400 font-semibold">${curS}</span> Strategy`;
+  el.innerHTML=`<div class="flex items-center justify-between mb-8 pb-4 border-b border-gray-800"><div class="flex items-center gap-4"><img src="/static/benmao.jpg" class="w-10 h-10 rounded-xl object-cover shadow-lg"><div><h1 class="text-xl font-bold text-gray-100 tracking-wide">${t("MT5-Ai Smart Engine")}</h1><div class="text-xs text-gray-500 mt-0.5">${stratLabel}</div></div><div class="h-8 w-px bg-gray-800 mx-2"></div><div class="flex items-center gap-2 bg-gray-800/50 px-3 py-1.5 rounded-full border border-gray-700"><span class="w-2.5 h-2.5 rounded-full ${sl.split(" ")[0]} animate-pulse"></span><span class="text-sm font-medium">${sl.split(" ").slice(1).join(" ")}</span></div></div><div class="flex items-center gap-3"><button onclick="toggleLang()" class="flex items-center gap-1.5 bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium transition border border-gray-700"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>${lang==="en"?"中文":"EN"}</button><button onclick="killswitch()" class="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 px-4 py-2 rounded-lg font-medium transition shadow-lg shadow-rose-900/20">${t("Killswitch")}</button></div></div>`;
+}
+
+// ==================== Sidebar ====================
+function renderSidebar(st){
+  const el=document.getElementById("sidebar");if(!el)return;
+  const acc=st.account||{},s=st.stats||{},ei=st.engine_info||{},dp=st.daily_pnl||0;
+  const ml=st.macro_bias==="BULLISH"?t("Bullish"):st.macro_bias==="BEARISH"?t("Bearish"):t("Neutral");
+  const mc=st.macro_bias==="BULLISH"?"text-emerald-400 bg-emerald-400/10":st.macro_bias==="BEARISH"?"text-rose-400 bg-rose-400/10":"text-gray-400 bg-gray-800";
+  const curStrat=st.active_strategy||"B2";
+  const kmLabel=KM_LABEL[_authKmtype]||_authKmtype||"-";
+  const kmBadge=_authKmtype==="longuse"?"bg-emerald-500/20 text-emerald-400 border-emerald-800/50":_authVip>0&&_authVip<=Math.floor(Date.now()/1000)?"bg-rose-500/20 text-rose-400 border-rose-800/50":"bg-amber-500/20 text-amber-400 border-amber-800/50";
+  // Bidirectional progress bar: center=0, left=loss(red), right=profit(green), max ±100
+  const dpClamped=Math.max(-100,Math.min(100,dp));
+  const barPct=Math.min(50,Math.abs(dpClamped)/100*50);
+  const isProfit=dp>=0;
+  const dpLabel=Math.abs(dp)>=99?(isProfit?"99+":"99-"):Math.abs(dp).toFixed(2);
+  const barHtml=dp===0?`<div class="h-3 w-full bg-gray-800 rounded-full relative shadow-inner"><div class="absolute left-1/2 top-0 w-0.5 h-full bg-gray-600"></div></div>`
+    :isProfit?`<div class="h-3 w-full bg-gray-800 rounded-full relative shadow-inner overflow-hidden"><div class="absolute left-1/2 top-0 w-0.5 h-full bg-gray-600 z-10"></div><div class="absolute top-0 h-full bg-gradient-to-r from-emerald-500 to-emerald-300 rounded-r-full transition-all duration-700" style="left:50%;width:${barPct}%"></div></div>`
+    :`<div class="h-3 w-full bg-gray-800 rounded-full relative shadow-inner overflow-hidden"><div class="absolute left-1/2 top-0 w-0.5 h-full bg-gray-600 z-10"></div><div class="absolute top-0 h-full bg-gradient-to-l from-rose-500 to-rose-300 rounded-l-full transition-all duration-700" style="right:50%;width:${barPct}%"></div></div>`;
+  el.innerHTML=`<div class="bg-gray-900 rounded-xl border border-gray-800 p-5"><h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">${t("Account")}</h2><div class="space-y-4"><div><div class="text-xs text-gray-500 mb-1">${t("Equity")}</div><div class="text-3xl font-bold text-gray-100">${fmt(acc.equity)}</div></div><div class="grid grid-cols-2 gap-4 pt-4 border-t border-gray-800/50"><div><div class="text-xs text-gray-500 mb-1">${t("Balance")}</div><div class="text-lg font-mono text-gray-300">${fmt(acc.balance)}</div></div><div><div class="text-xs text-gray-500 mb-1">${t("Free Margin")}</div><div class="text-lg font-mono text-gray-300">${fmt(acc.margin_free)}</div></div></div><button onclick="testMT5()" id="mt5-test-btn" class="mt-4 w-full flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>${t("Test Connection")}</button></div></div><div class="bg-gray-900 rounded-xl border border-gray-800 p-5 relative overflow-hidden"><h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">${t("Daily Progress")}</h2><div class="flex justify-between items-end mb-2"><div><div class="text-xs text-gray-500 mb-1">${t("Realized PnL")}</div><div class="text-2xl font-bold ${pnlC(dp)}">${dp>0?"+":""}${dpLabel} USD</div></div><div class="text-right"><div class="text-xs text-gray-500 mb-1">-100</div><div class="text-xs text-gray-600">±100 USD</div></div></div>${barHtml}<div class="flex justify-between text-xs mt-1"><span class="text-rose-400/60">-100</span><span class="text-gray-600">0</span><span class="text-emerald-400/60">+100</span></div><div class="mt-3 flex justify-between text-xs"><span class="text-gray-500">${t("Trades")}: <span class="text-gray-300">${st.daily_trades||0}</span></span><span class="text-gray-500">${t("Drawdown")}: <span class="text-rose-400">${fmt(st.daily_max_drawdown)}</span></span></div><button onclick="showDailyPnl()" class="mt-3 w-full text-xs text-emerald-400 hover:text-emerald-300 transition text-left">${t("Daily PnL Detail")} ▸</button></div><div class="bg-gray-900 rounded-xl border border-gray-800 p-5"><h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">${t("Strategy")}</h2><div class="space-y-4"><div class="flex justify-between items-center"><span class="text-sm text-gray-400">${t("H1 Macro")}</span><span class="${mc} px-2 py-1 rounded text-sm">${ml}</span></div><div class="flex justify-between items-center pt-3 border-t border-gray-800/50"><span class="text-sm text-gray-400">${t("Mode")}</span><span class="text-sm font-medium text-amber-200 bg-amber-900/30 px-2 py-1 rounded border border-amber-800/50">${ei.state||"INIT"}</span></div><div class="flex justify-between items-center pt-3 border-t border-gray-800/50"><span class="text-sm text-gray-400">${t("Strategy")}</span><span class="text-sm font-mono text-emerald-400">${curStrat}</span></div><div class="flex justify-between items-center pt-3 border-t border-gray-800/50"><span class="text-sm text-gray-400">${t("Silence")}</span><span class="text-xs text-gray-500">${ei.silence_reason||"-"}</span></div><div class="flex justify-between items-center pt-3 border-t border-gray-800/50"><span class="text-sm text-gray-400">${t("Win Rate")}</span><span class="text-sm font-mono text-gray-300">${(s.win_rate||0).toFixed(1)}% (${s.wins||0}/${s.total_trades||0})</span></div><div class="flex justify-between items-center pt-3 border-t border-gray-800/50"><span class="text-sm text-gray-400">${t("Total PnL")}</span><span class="text-sm font-mono ${pnlC(s.total_pnl||0)}">${(s.total_pnl||0)>0?"+":""}${fmt(s.total_pnl||0)}</span></div></div></div><div class="bg-gray-900 rounded-xl border border-gray-800 p-5"><h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">${t("License")}</h2><div class="flex items-center justify-between mb-2"><span class="text-xs text-gray-500">${t("Card Auth")}</span><span class="text-xs font-medium px-2 py-0.5 rounded border ${kmBadge}">${kmLabel}</span></div><div class="flex items-center justify-between"><span id="cd-label" class="text-xs text-gray-500">${t("Remaining")}</span><span id="cd-time" class="text-sm font-mono font-bold text-emerald-400">${formatCountdown(_authVip)}</span></div>${_authNote?`<div class="text-xs text-gray-600 mt-2 truncate" title="${_authNote}">${_authNote}</div>`:""}<button onclick="doLogout()" class="mt-3 w-full text-xs text-gray-500 hover:text-rose-400 transition text-left">${t("Logout")} ▸</button></div>`;
+}
+
+// ==================== Tab Bar ====================
+function renderTabs(){
+  const el=document.getElementById("tab-bar");if(!el)return;
+  const tabs=["positions","trades","history","decisions","chart","config","audit","settings"];
+  const lb={positions:t("Positions"),trades:t("Trade Log"),history:t("History"),decisions:t("Decisions"),chart:t("Chart"),config:t("Config"),audit:t("Audit"),settings:t("Settings")};
+  el.innerHTML=`<div class="flex gap-5 border-b border-gray-800 px-6 pt-4 flex-wrap">${tabs.map(tb=>`<button onclick="switchTab('${tb}')" class="pb-3 text-sm font-medium transition ${currentTab===tb?'tab-active':'tab-inactive'}">${lb[tb]}</button>`).join("")}</div>`;
+}
+
+function renderTitle(){
+  const el=document.getElementById("main-title");if(!el)return;
+  const tm={positions:t("Active Positions"),trades:t("Trade Log"),history:t("Closed Trades"),decisions:t("Decisions"),chart:t("Chart"),config:t("Config"),audit:t("Audit"),settings:t("Settings")};
+  el.innerHTML=`<h2 class="text-lg font-semibold text-gray-100">${tm[currentTab]||""}</h2><div class="flex items-center text-xs text-gray-500"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-2"></span>LIVE</div>`;
+}
+
+// ==================== Table renderers ====================
+function rPos(pos){if(!pos||!pos.length)return`<div class="px-6 py-24 text-center"><div class="text-gray-600 text-lg">${t("No active positions")}</div><div class="text-sm mt-1 text-gray-700">${t("Waiting for signals...")}</div></div>`;const profitPos=pos.filter(p=>p.profit>0);return`<div class="px-6 py-3 border-b border-gray-800 flex items-center justify-between"><span class="text-sm text-gray-400">${pos.length} ${t("positions")}</span>${profitPos.length?`<button onclick="closeAllProfitable()" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg text-xs font-medium transition">${t("Close All Profitable")} (${profitPos.length})</button>`:""}</div><table class="w-full text-left border-collapse min-w-[800px]"><thead><tr class="bg-gray-900/80 text-xs uppercase tracking-wider text-gray-500 border-b border-gray-800"><th class="px-6 py-4 font-medium">${t("Symbol / Dir")}</th><th class="px-6 py-4 font-medium">${t("Vol")}</th><th class="px-6 py-4 font-medium">${t("Open -> Current")}</th><th class="px-6 py-4 font-medium">${t("SL / Status")}</th><th class="px-6 py-4 font-medium text-right">${t("PnL")}</th><th class="px-6 py-4 font-medium text-right">${t("Duration")}</th><th class="px-6 py-4 font-medium text-center">${t("Action")}</th></tr></thead><tbody class="divide-y divide-gray-800/60">${[...pos].sort((a,b)=>b.profit-a.profit).map(p=>{const ib=p.direction==="BUY";const ss=p.sl_status==="break_even"?t("Break-even"):p.sl_status==="profit_lock"?t("Locked"):t("Initial");const dm=Math.abs(Math.round(p.duration_min));const durLabel=dm>=60?Math.floor(dm/60)+"h"+(dm%60?" "+dm%60+"m":""):dm+"m";return`<tr class="hover:bg-gray-800/30"><td class="px-6 py-4"><div class="flex items-center"><span class="w-1.5 h-6 rounded-full mr-3 ${ib?"bg-emerald-500":"bg-rose-500"}"></span><div><div class="font-bold text-gray-200">${p.symbol}</div><div class="text-xs font-semibold ${ib?"text-emerald-400":"text-rose-400"}">${p.direction}</div></div></div></td><td class="px-6 py-4 font-mono text-gray-300">${p.volume.toFixed(2)}</td><td class="px-6 py-4 font-mono text-sm"><div class="text-gray-400">${p.open_price.toFixed(3)}</div><div class="text-gray-100 mt-1">${p.current_price.toFixed(3)}</div></td><td class="px-6 py-4 font-mono text-sm"><div class="text-gray-200">${p.sl?p.sl.toFixed(3):"NONE"}</div><div class="text-xs mt-1 font-sans ${p.sl_status==="initial"?"text-gray-500":p.sl_status==="break_even"?"text-amber-400":"text-emerald-400"}">${ss}</div></td><td class="px-6 py-4 text-right"><div class="text-lg font-bold font-mono ${pnlC(p.profit)}">${p.profit>0?"+":""}${fmt(p.profit)}</div></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end text-sm text-gray-400"><svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>${durLabel}</div></td><td class="px-6 py-4 text-center"><button onclick="closePosition(${p.ticket})" class="px-3 py-1 rounded text-xs font-medium transition ${p.profit>0?"bg-rose-600/80 hover:bg-rose-500 text-white":"bg-gray-700 hover:bg-gray-600 text-gray-300"}">${t("Close")}</button></td></tr>`}).join("")}</tbody></table>`}
+
+function rTrades(trades){if(!trades||!trades.length)return`<div class="px-6 py-16 text-center text-gray-600 text-lg">${t("No trade records")}</div>`;return`<table class="w-full text-left border-collapse min-w-[700px]"><thead><tr class="bg-gray-900/80 text-xs uppercase tracking-wider text-gray-500 border-b border-gray-800"><th class="px-4 py-3 font-medium">${t("Time")}</th><th class="px-4 py-3 font-medium">${t("Direction")}</th><th class="px-4 py-3 font-medium">${t("Strategy")}</th><th class="px-4 py-3 font-medium">${t("Price")}</th><th class="px-4 py-3 font-medium">${t("Vol")}</th><th class="px-4 py-3 font-medium">${t("Reason")}</th></tr></thead><tbody class="divide-y divide-gray-800/60">${trades.map(tr=>{const ib=tr.direction&&tr.direction.toLowerCase().includes("buy");return`<tr class="hover:bg-gray-800/30"><td class="px-4 py-3 text-xs text-gray-400">${(tr.timestamp||"").slice(11,19)}</td><td class="px-4 py-3"><span class="text-xs font-semibold ${ib?"text-emerald-400":"text-rose-400"}">${tr.direction||""}</span></td><td class="px-4 py-3 text-xs text-gray-400">${tr.strategy||""}</td><td class="px-4 py-3 font-mono text-sm text-gray-300">${tr.price?tr.price.toFixed(2):"-"}</td><td class="px-4 py-3 font-mono text-sm text-gray-300">${tr.volume||"-"}</td><td class="px-4 py-3 text-xs text-gray-500 max-w-[200px] truncate">${tr.reason||""}</td></tr>`}).join("")}</tbody></table>`}
+
+function rDec(dec){if(!dec||!dec.length)return`<div class="px-6 py-16 text-center text-gray-600 text-lg">${t("No decision records")}</div>`;return`<table class="w-full text-left border-collapse min-w-[600px]"><thead><tr class="bg-gray-900/80 text-xs uppercase tracking-wider text-gray-500 border-b border-gray-800"><th class="px-4 py-3 font-medium">${t("Time")}</th><th class="px-4 py-3 font-medium">${t("Direction")}</th><th class="px-4 py-3 font-medium">${t("Price")}</th><th class="px-4 py-3 font-medium">${t("Reason")}</th></tr></thead><tbody class="divide-y divide-gray-800/60">${dec.map(d=>{const ib=d.direction&&d.direction.toLowerCase().includes("buy");return`<tr class="hover:bg-gray-800/30"><td class="px-4 py-3 text-xs text-gray-400">${(d.timestamp||"").slice(11,19)}</td><td class="px-4 py-3"><span class="text-xs font-semibold ${ib?"text-emerald-400":"text-rose-400"}">${d.direction||""}</span></td><td class="px-4 py-3 font-mono text-sm text-gray-300">${d.price?d.price.toFixed(2):"-"}</td><td class="px-4 py-3 text-xs text-gray-500 max-w-[300px] truncate">${d.reason||""}</td></tr>`}).join("")}</tbody></table>`}
+
+function rHist(hist){if(!hist||!hist.length)return`<div class="px-6 py-16 text-center text-gray-600 text-lg">${t("No closed trade records")}</div>`;return`<table class="w-full text-left border-collapse min-w-[800px]"><thead><tr class="bg-gray-900/80 text-xs uppercase tracking-wider text-gray-500 border-b border-gray-800"><th class="px-4 py-3 font-medium">${t("Open Time")}</th><th class="px-4 py-3 font-medium">${t("Dir")}</th><th class="px-4 py-3 font-medium">${t("Open")}</th><th class="px-4 py-3 font-medium">${t("Close")}</th><th class="px-4 py-3 font-medium text-right">${t("PnL")}</th><th class="px-4 py-3 font-medium">${t("Strategy")}</th></tr></thead><tbody class="divide-y divide-gray-800/60">${hist.map(h=>{const ib=h.direction&&(h.direction.toLowerCase().includes("buy")||h.direction==="long");return`<tr class="hover:bg-gray-800/30"><td class="px-4 py-3 text-xs text-gray-400">${(h.open_time||"").slice(0,16)}</td><td class="px-4 py-3"><span class="text-xs font-semibold ${ib?"text-emerald-400":"text-rose-400"}">${h.direction||""}</span></td><td class="px-4 py-3 font-mono text-sm text-gray-300">${h.open_price?h.open_price.toFixed(2):"-"}</td><td class="px-4 py-3 font-mono text-sm text-gray-300">${h.close_price?h.close_price.toFixed(2):"-"}</td><td class="px-4 py-3 text-right font-mono font-bold ${pnlC(h.profit)}">${h.profit>0?"+":""}${fmt(h.profit)}</td><td class="px-4 py-3 text-xs text-gray-500">${h.strategy||""}</td></tr>`}).join("")}</tbody></table>`}
+
+// ==================== Chart Module (persistent) ====================
+let _chartTF="M5";
+const CM={chart:null,cs:null,rt:null,lf:0,_sym:"",
+  init(id){const el=document.getElementById(id);if(!el||this.chart)return;this.chart=LightweightCharts.createChart(el,{layout:{background:{color:'#111827'},textColor:'#9ca3af'},grid:{vertLines:{color:'#1f2937'},horzLines:{color:'#1f2937'}},width:el.clientWidth,height:500,timeScale:{timeVisible:true,secondsVisible:false}});this.cs=this.chart.addCandlestickSeries({upColor:'#10b981',downColor:'#ef4444',borderUpColor:'#10b981',borderDownColor:'#ef4444',wickUpColor:'#10b981',wickDownColor:'#ef4444'});this.load()},
+  async load(){if(Date.now()-this.lf<5000)return;const sym=_curSymbol||"XAUUSD";if(sym!==this._sym)this.lf=0;this._sym=sym;const[kl,pos]=await Promise.all([get("/api/klines?symbol="+encodeURIComponent(sym)+"&timeframe="+_chartTF+"&count=300"),get("/api/positions")]);if(kl&&this.cs){this.cs.setData(kl);this.lf=Date.now()}if(pos&&this.cs){const mk=pos.map(p=>({time:iso2u(p.open_time),position:p.direction==="BUY"?"belowBar":"aboveBar",color:p.direction==="BUY"?"#10b981":"#ef4444",shape:p.direction==="BUY"?"arrowUp":"arrowDown",text:p.direction.slice(0,1)+"@"+p.open_price.toFixed(1)})).sort((a,b)=>a.time-b.time);this.cs.setMarkers(mk)}},
+  destroy(){if(this.rt)clearInterval(this.rt);if(this.chart){this.chart.remove();this.chart=null;this.cs=null}this.lf=0}
+};
+
+// ==================== Audit Module (persistent) ====================
+let auditFrom=daysAgo(7),auditTo=today();
+const AM={eqC:null,eqS:null,rt:null,lf:0,
+  async load(force){
+    if(!force&&Date.now()-this.lf<3000)return;
+    this.lf=Date.now();
+    const asEl=document.getElementById("as");
+    if(asEl)asEl.innerHTML='<div class="text-gray-500 text-center py-4"><svg class="w-5 h-5 animate-spin inline mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>'+t("Loading config...")+'</div>';
+    try{
+      const afEl=document.getElementById("af");
+      const atEl=document.getElementById("at2");
+      let params='';
+      if(afEl&&afEl.value) params+='&from='+afEl.value;
+      if(atEl&&atEl.value) params+='&to='+atEl.value;
+      const au=await get('/api/trades/audit'+(params?'?'+params.slice(1):''));
+      const st=await get('/api/trades/stats');
+      if(!au&&!st){
+        if(asEl)asEl.innerHTML='<div class="text-rose-400 text-center py-4">'+t("Connection Error")+'</div>';
+        return;
+      }
+      this.rStats(st||{},au||{});
+      this.rEq((au&&au.equity_curve)||[]);
+      this.rDaily((au&&au.daily_stats)||[]);
+      this.rReason((au&&au.reason_dist)||[]);
+      this.rRecent((au&&au.recent_trades)||[]);
+      this.rDecs((au&&au.recent_decisions)||[]);
+    }catch(e){
+      console.error("Audit load error:",e);
+      if(asEl)asEl.innerHTML='<div class="text-rose-400 text-center py-4">Error: '+e.message+'</div>';
+    }
+  },
+  rStats(s,au){const el=document.getElementById("as");if(!el)return;if(!s)s={total_trades:0,win_rate:0,total_pnl:0,wins:0};const closedTrades=au&&au.recent_trades?au.recent_trades.filter(t=>t.close_time):[];let avgW=0,avgL=0,pf="-";if(closedTrades.length){const wins=closedTrades.filter(t=>t.profit>0);const losses=closedTrades.filter(t=>t.profit<=0);if(wins.length)avgW=wins.reduce((a,b)=>a+b.profit,0)/wins.length;if(losses.length)avgL=losses.reduce((a,b)=>a+b.profit,0)/losses.length;if(avgL!==0)pf=(Math.abs(avgW*wins.length)/(Math.abs(avgL)*losses.length||1)).toFixed(2)}const openCount=au&&au.recent_trades?au.recent_trades.filter(t=>!t.close_time).length:0;el.innerHTML=`<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"><div class="bg-gray-800/50 rounded-lg p-3"><div class="text-xs text-gray-500">${t("Trades")}</div><div class="text-xl font-bold text-gray-100">${s.total_trades||0}${openCount?'<span class="text-xs text-amber-400 ml-1">('+openCount+' open)</span>':''}</div></div><div class="bg-gray-800/50 rounded-lg p-3"><div class="text-xs text-gray-500">${t("Win Rate")}</div><div class="text-xl font-bold ${pnlC(s.win_rate||0)}">${(s.win_rate||0).toFixed(1)}%</div></div><div class="bg-gray-800/50 rounded-lg p-3"><div class="text-xs text-gray-500">${t("Total PnL")}</div><div class="text-xl font-bold ${pnlC(s.total_pnl||0)}">${(s.total_pnl||0)>0?"+":""}${fmt(s.total_pnl)}</div></div><div class="bg-gray-800/50 rounded-lg p-3"><div class="text-xs text-gray-500">${t("Profit Factor")}</div><div class="text-xl font-bold text-gray-100">${pf}</div></div><div class="bg-gray-800/50 rounded-lg p-3"><div class="text-xs text-gray-500">${t("Avg Win")}</div><div class="text-xl font-bold text-emerald-400">${avgW?"+"+fmt(avgW):"-"}</div></div><div class="bg-gray-800/50 rounded-lg p-3"><div class="text-xs text-gray-500">${t("Avg Loss")}</div><div class="text-xl font-bold text-rose-400">${avgL?fmt(avgL):"-"}</div></div></div>`},
+  rEq(data){const el=document.getElementById("ae");if(!el)return;if(!this.eqC||!el.querySelector('canvas')){this._safeDestroyChart();const w=Math.max(el.clientWidth||el.offsetWidth||300,300);try{this.eqC=LightweightCharts.createChart(el,{layout:{background:{color:'#111827'},textColor:'#9ca3af'},grid:{vertLines:{color:'#1f2937'},horzLines:{color:'#1f2937'}},width:w,height:250,timeScale:{timeVisible:true,secondsVisible:false}});this.eqS=this.eqC.addLineSeries({color:'#10b981',lineWidth:2,lineType:2})}catch(e){console.error("Chart create error:",e);return}}if(!data||!data.length){if(this.eqS)try{this.eqS.setData([])}catch(e){}return}const pts=data.map(p=>({time:iso2u(p.time),value:p.equity})).sort((a,b)=>a.time-b.time);const seen={};const dedup=[];for(const p of pts){if(seen[p.time]!==undefined){dedup[seen[p.time]].value=p.value}else{seen[p.time]=dedup.length;dedup.push(p)}}try{this.eqS.setData(dedup);this.eqC.timeScale().fitContent()}catch(e){console.error("Chart setData error:",e)}},
+  _safeDestroyChart(){if(this.eqC){try{this.eqC.remove()}catch(e){}this.eqC=null;this.eqS=null}},
+  rDaily(data){const el=document.getElementById("ad");if(!el)return;if(!data||!data.length){el.innerHTML=`<div class="text-gray-600 text-xs py-2">${t("No audit data")}</div>`;return}el.innerHTML=`<table class="w-full text-sm"><thead><tr class="text-xs text-gray-500 border-b border-gray-800"><th class="px-3 py-2 text-left">${t("Day")}</th><th class="px-3 py-2 text-left">${t("Win Rate")}</th><th class="px-3 py-2 text-right">${t("PnL")}</th></tr></thead><tbody>${data.map(d=>{const wr=d.total>0?Math.round(d.wins/d.total*100):0;return`<tr class="border-b border-gray-800/30"><td class="px-3 py-2 text-gray-400">${d.day}</td><td class="px-3 py-2"><div class="flex items-center gap-2"><div class="h-3 w-24 bg-gray-800 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 rounded-full" style="width:${wr}%"></div></div><span class="text-xs text-gray-300">${wr}% (${d.wins}/${d.total})</span></div></td><td class="px-3 py-2 text-right font-mono ${pnlC(d.pnl)}">${fmt(d.pnl)}</td></tr>`}).join("")}</tbody></table>`},
+  rReason(data){const el=document.getElementById("ar");if(!el)return;if(!data||!data.length){el.innerHTML=`<div class="text-gray-600 text-xs py-2">${t("No audit data")}</div>`;return}const mx=Math.max(...data.map(d=>d.cnt));el.innerHTML=data.map(d=>`<div class="flex items-center gap-2 mb-2"><span class="w-40 text-xs text-gray-400 truncate">${d.reason||"-"}</span><div class="h-4 bg-rose-500/60 rounded" style="width:${Math.round(d.cnt/mx*120)}px"></div><span class="text-xs text-gray-500">${d.cnt}</span></div>`).join("")},
+  rRecent(data){const el=document.getElementById("at");if(!el)return;if(!data||!data.length){el.innerHTML=`<div class="text-gray-600 text-xs py-2">${t("No trade records")}</div>`;return}el.innerHTML=`<table class="w-full text-sm min-w-[700px]"><thead><tr class="text-xs text-gray-500 border-b border-gray-800"><th class="px-3 py-2 text-left">Time</th><th class="px-3 py-2">Dir</th><th class="px-3 py-2">Open</th><th class="px-3 py-2">Close</th><th class="px-3 py-2 text-right">PnL</th><th class="px-3 py-2">${t("Indicators")}</th></tr></thead><tbody>${data.map(tr=>{const ib=tr.direction&&(tr.direction.toLowerCase().includes("buy")||tr.direction==="long");const isOpen=!tr.close_time;const tStr=isOpen?(tr.open_time||"").slice(0,16):(tr.close_time||"").slice(0,16);const statusCls=isOpen?"text-amber-400":"text-gray-400";return`<tr class="border-b border-gray-800/30"><td class="px-3 py-2 text-xs ${statusCls}">${tStr}${isOpen?" (OPEN)":""}</td><td class="px-3 py-2"><span class="text-xs font-semibold ${ib?"text-emerald-400":"text-rose-400"}">${tr.direction||""}</span></td><td class="px-3 py-2 font-mono text-xs text-gray-300">${tr.open_price?tr.open_price.toFixed(2):"-"}</td><td class="px-3 py-2 font-mono text-xs text-gray-300">${tr.close_price?tr.close_price.toFixed(2):"-"}</td><td class="px-3 py-2 text-right font-mono text-xs font-bold ${pnlC(tr.profit||0)}">${(tr.profit||0)>0?"+":""}${fmt(tr.profit||0)}</td><td class="px-3 py-2 text-xs text-gray-500 max-w-[200px] truncate">${tr.indicators||tr.reason||"-"}</td></tr>`}).join("")}</tbody></table>`},
+  rDecs(data){const el=document.getElementById("ad2");if(!el)return;if(!data||!data.length){el.innerHTML=`<div class="text-gray-600 text-xs py-2">${t("No decision records")}</div>`;return}el.innerHTML=`<table class="w-full text-sm min-w-[600px]"><thead><tr class="text-xs text-gray-500 border-b border-gray-800"><th class="px-3 py-2 text-left">Time</th><th class="px-3 py-2">Dir</th><th class="px-3 py-2">${t("Price")}</th><th class="px-3 py-2">${t("Reason")}</th></tr></thead><tbody>${data.map(d=>{const ib=d.direction&&(d.direction.toLowerCase().includes("buy")||d.direction==="long");return`<tr class="border-b border-gray-800/30"><td class="px-3 py-2 text-xs text-gray-400">${(d.timestamp||"").slice(0,16)}</td><td class="px-3 py-2"><span class="text-xs font-semibold ${ib?"text-emerald-400":"text-rose-400"}">${d.direction||""}</span></td><td class="px-3 py-2 font-mono text-xs text-gray-300">${d.price?d.price.toFixed(2):"-"}</td><td class="px-3 py-2 text-xs text-gray-500 max-w-[200px] truncate">${d.reason||"-"}</td></tr>`}).join("")}</tbody></table>`},
+  destroy(){if(this.rt){clearInterval(this.rt);this.rt=null}this._safeDestroyChart()}
+};
+
+// ==================== Config Module (persistent) ====================
+const CF=[{key:"volume",label:"Volume",group:"risk",min:0.01,max:0.05,step:0.01},{key:"sl_pct",label:"SL %",group:"risk",min:0.001,max:0.05,step:0.001},{key:"tp_pct",label:"TP %",group:"risk",min:0.002,max:0.1,step:0.002},{key:"max_trades",label:"Max Trades/Day",group:"risk",min:1,max:10,step:1},{key:"max_loss",label:"Max Daily Loss",group:"risk",min:5,max:100,step:5},{key:"sl_atr_multiplier",label:"SL ATR",group:"risk",min:0.5,max:5,step:0.1},{key:"tp_atr_multiplier",label:"TP ATR",group:"risk",min:0.5,max:10,step:0.1},{key:"rsi_overbought",label:"RSI Overbought",group:"strategy",min:50,max:95,step:1},{key:"rsi_oversold",label:"RSI Oversold",group:"strategy",min:5,max:50,step:1},{key:"trend_sma_fast",label:"Trend SMA Fast",group:"strategy",min:5,max:50,step:1},{key:"trend_sma_slow",label:"Trend SMA Slow",group:"strategy",min:10,max:200,step:1},{key:"entry_bb_period",label:"BB Period",group:"strategy",min:10,max:50,step:1},{key:"entry_bb_std",label:"BB Std",group:"strategy",min:1,max:4,step:0.1},{key:"trend_strength_threshold",label:"Trend Strength",group:"strategy",min:10,max:90,step:1},{key:"bb_touch_buffer",label:"BB Touch Buf",group:"strategy",min:0,max:0.01,step:0.0001},{key:"session_start",label:"Session Start",group:"session",min:0,max:23,step:1},{key:"session_end",label:"Session End",group:"session",min:1,max:24,step:1},{key:"cooldown_after_trade_minutes",label:"Cooldown Trade",group:"session",min:10,max:240,step:5},{key:"cooldown_no_signal_minutes",label:"Cooldown Signal",group:"session",min:10,max:240,step:5}];
+let _cfgLoaded=false, _setLoaded=false, _switchErrShown=false;
+
+async function loadConfig(){
+  const el=document.getElementById("cfgc");if(!el)return;
+  const cfg=await get("/api/config");if(!cfg){el.innerHTML=`<div class="px-6 py-16 text-center text-gray-600">${t("Loading config...")}</div>`;return}
+  const gr={risk:t("Risk Parameters"),strategy:t("Strategy Parameters"),session:t("Session Parameters")};
+  let h="";for(const[gk,gl]of Object.entries(gr)){const fs=CF.filter(f=>f.group===gk);h+=`<div class="mb-6"><h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">${gl}</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-3">`;for(const f of fs){const c=cfg[f.key];h+=`<div class="flex items-center gap-3 bg-gray-800/30 rounded-lg px-3 py-2"><label class="text-sm text-gray-400 w-36 shrink-0">${f.label}</label><span class="text-sm font-mono text-gray-500 w-16 text-right">${c!==undefined?c:"-"}</span><input type="number" id="cfg-${f.key}" value="${c!==undefined?c:f.min}" min="${f.min}" max="${f.max}" step="${f.step}" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-sm font-mono text-gray-200 w-24 focus:border-emerald-500 focus:outline-none"><span class="text-xs text-gray-600">${f.min}~${f.max}</span></div>`}h+=`</div></div>`}h+=`<button onclick="applyCfg()" class="mt-4 bg-emerald-600 hover:bg-emerald-500 px-6 py-2 rounded-lg font-medium transition">${t("Apply Changes")}</button><span id="cfg-st" class="ml-4 text-sm text-gray-500"></span>`;el.innerHTML=h;_cfgLoaded=true;
+}
+
+async function applyCfg(){const cfg=await get("/api/config");if(!cfg)return;const items=[];for(const f of CF){const el=document.getElementById("cfg-"+f.key);if(!el)continue;const nv=parseFloat(el.value);const cv=cfg[f.key];if(nv!==cv)items.push({key:f.key,value:nv})}if(!items.length){toast(t("No changes"),'info');return}const msg=items.map(i=>i.key+": "+i.value).join("\n");if(!await customConfirm(t("Confirm Config Changes"),msg+"\n"+t("Are you sure?")))return;const r=await post("/api/config",items);if(r&&r.status==="pending")toast(t("Changes pending... Engine will apply on next cycle."),'success');else toast(t("Config update failed"),'error')}
+
+// ==================== Settings Module (.env) ====================
+async function loadSettings(){
+  const el=document.getElementById("setc");if(!el)return;
+  const data=await get("/api/settings");
+  if(!data||!data.schema){el.innerHTML=`<div class="text-center text-gray-600 py-8">Loading...</div>`;return}
+  const vals=data.values||{};
+  const groups={mt5:t("MT5 Account"),email:t("Email Alerts")};
+  let h="";
+  for(const[gk,gl]of Object.entries(groups)){
+    const fields=data.schema.filter(f=>f.group===gk);
+    h+=`<div class="mb-6"><h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">${gl}</h3><div class="space-y-3">`;
+    for(const f of fields){
+      const lb=lang==="zh"?f.label_zh:f.label_en;
+      const v=vals[f.key]||"";
+      if(f.type==="password"){
+        h+=`<div class="flex items-center gap-3 bg-gray-800/30 rounded-lg px-3 py-2"><label class="text-sm text-gray-400 w-28 shrink-0">${lb}</label><input type="password" id="set-${f.key}" value="${v}" class="flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-sm font-mono text-gray-200 focus:border-emerald-500 focus:outline-none" placeholder="${lb}"><button onclick="const i=document.getElementById('set-${f.key}');i.type=i.type==='password'?'text':'password'" class="text-xs text-gray-500 hover:text-gray-300">👁</button></div>`;
+      }else if(f.type==="select"){
+        const opts=f.options.map(o=>`<option value="${o}" ${o===v?"selected":""}>${o}</option>`).join("");
+        h+=`<div class="flex items-center gap-3 bg-gray-800/30 rounded-lg px-3 py-2"><label class="text-sm text-gray-400 w-28 shrink-0">${lb}</label><select id="set-${f.key}" class="flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-sm text-gray-200 focus:border-emerald-500 focus:outline-none">${opts}</select></div>`;
+      }else if(f.type==="number"){
+        h+=`<div class="flex items-center gap-3 bg-gray-800/30 rounded-lg px-3 py-2"><label class="text-sm text-gray-400 w-28 shrink-0">${lb}</label><input type="number" id="set-${f.key}" value="${v}" ${f.step?`step="${f.step}"`:""} ${f.min?`min="${f.min}"`:""} ${f.max?`max="${f.max}"`:""} class="flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-sm font-mono text-gray-200 focus:border-emerald-500 focus:outline-none"></div>`;
+      }else{
+        h+=`<div class="flex items-center gap-3 bg-gray-800/30 rounded-lg px-3 py-2"><label class="text-sm text-gray-400 w-28 shrink-0">${lb}</label><input type="text" id="set-${f.key}" value="${v}" class="flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-sm font-mono text-gray-200 focus:border-emerald-500 focus:outline-none" placeholder="${lb}"></div>`;
+      }
+    }
+    h+=`</div></div>`;
+  }
+  h+=`<div class="flex items-center gap-4 mt-6"><button onclick="saveAndRestart()" id="save-restart-btn" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-2.5 rounded-lg font-medium transition flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0A8.003 8.003 0 014.319 15m0 0H9"/></svg>${t("Save & Restart")}</button><button onclick="testEmail()" id="test-email-btn" class="bg-gray-700 hover:bg-gray-600 px-4 py-2.5 rounded-lg font-medium transition text-sm">${t("Test Email")}</button><span id="set-st" class="text-sm text-gray-500"></span></div>`;
+  el.innerHTML=h;_setLoaded=true;
+}
+
+async function saveAndRestart(){
+  if(!await customConfirm(t("Confirm restart?"),t("This will restart the entire application.")))return;
+  const btn=document.getElementById("save-restart-btn");if(btn){btn.disabled=true;btn.innerHTML=`<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>${t("Saving...")}`}
+  const data=await get("/api/settings");if(!data)return;
+  const vals={};for(const f of data.schema){const el=document.getElementById("set-"+f.key);if(el)vals[f.key]=el.value}
+  const r=await post("/api/settings",vals);
+  if(r&&r.ok){
+    toast(t("Config saved. Restarting..."),'success',4000);
+    await post("/api/restart");
+    // Wait for engine to restart, then refresh UI
+    setTimeout(async()=>{
+      for(let i=0;i<30;i++){
+        await new Promise(r=>setTimeout(r,1000));
+        try{
+          const st=await get("/api/status");
+          if(st&&st.switch_error){toast(t("Strategy switch failed")+": "+st.switch_error,'error',8000);if(btn){btn.disabled=false;btn.innerHTML=`<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0A8.003 8.003 0 014.319 15m0 0H9"/></svg>${t("Save & Restart")}`};return}
+          if(st&&st.engine_state==="RUNNING"){location.reload();return}
+        }catch(e){}
+      }
+      // Timeout - reload anyway
+      location.reload();
+    },5000);
+  }else{
+    toast(t("Restart failed"),'error');
+    if(btn){btn.disabled=false;btn.innerHTML=`<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0A8.003 8.003 0 014.319 15m0 0H9"/></svg>${t("Save & Restart")}`}
+  }
+}
+
+// ==================== Daily PnL Modal ====================
+async function showDailyPnl(){
+  const au=await get("/api/trades/audit");if(!au||!au.daily_stats)return;
+  const data=au.daily_stats;
+  let h=`<div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick="if(event.target===this)this.remove()"><div class="bg-gray-900 rounded-xl border border-gray-800 p-6 max-w-lg w-full max-h-[80vh] overflow-auto"><h3 class="text-lg font-semibold text-gray-100 mb-4">${t("Daily PnL Detail")}</h3><table class="w-full text-sm"><thead><tr class="text-xs text-gray-500 border-b border-gray-800"><th class="px-3 py-2 text-left">${t("Date")}</th><th class="px-3 py-2 text-left">${t("Win Rate")}</th><th class="px-3 py-2 text-right">${t("PnL")}</th><th class="px-3 py-2 text-right">${t("Trades")}</th></tr></thead><tbody>${data.map(d=>{const wr=d.total>0?Math.round(d.wins/d.total*100):0;return`<tr class="border-b border-gray-800/30"><td class="px-3 py-2 text-gray-400">${d.day}</td><td class="px-3 py-2"><div class="h-2 w-16 bg-gray-800 rounded-full overflow-hidden inline-block align-middle mr-2"><div class="h-full bg-emerald-500 rounded-full" style="width:${wr}%"></div></div><span class="text-xs text-gray-300">${wr}%</span></td><td class="px-3 py-2 text-right font-mono font-semibold ${pnlC(d.pnl)}">${d.pnl>0?"+":""}${fmt(d.pnl)}</td><td class="px-3 py-2 text-right text-gray-400">${d.total}</td></tr>`}).join("")}</tbody></table><button onclick="this.closest('.fixed').remove()" class="mt-4 text-sm text-gray-500 hover:text-gray-300">${t("Killswitch").length?"Close":"关闭"}</button></div></div>`;
+  document.body.insertAdjacentHTML("beforeend",h);
+}
+
+// ==================== Tab switching ====================
+function switchTab(tb){
+  if(currentTab===tb)return;
+  if(currentTab==="chart"&&tb!=="chart"){CM.destroy();_ci=false}
+  if(currentTab==="audit"&&tb!=="audit"){AM.destroy();_ai=false}
+  if(currentTab==="config")_cfgLoaded=false;
+  if(currentTab==="settings")_setLoaded=false;
+  currentTab=tb;
+  renderTabs();renderTitle();
+  activateTab();
+}
+
+let _ci=false,_ai=false;
+function applyAuditFilter(){const af=document.getElementById("af");const at=document.getElementById("at2");if(af)auditFrom=af.value;if(at)auditTo=at.value;AM.load(true)}
+function switchTF(tf){_chartTF=tf;CM.lf=0;if(CM.chart){CM.load()}const bar=document.getElementById("tf-bar");if(bar){bar.innerHTML=["M1","M5","M15","M30","H1","H4","D1","W1","MN"].map(t=>`<button onclick="switchTF('${t}')" class="px-2 py-1 rounded text-xs font-medium transition ${t===_chartTF?"bg-emerald-600 text-white":"bg-gray-800 text-gray-400 hover:bg-gray-700"}">${t}</button>`).join("")}}
+function activateTab(){
+  const mc=document.getElementById("mc");
+  const isTable=["positions","trades","history","decisions"].includes(currentTab);
+  if(isTable){refreshTableContent();return}
+  if(currentTab==="chart"&&!_ci){mc.innerHTML=`<div class="px-4 py-2 flex items-center gap-1 border-b border-gray-800" id="tf-bar">${["M1","M5","M15","M30","H1","H4","D1","W1","MN"].map(tf=>`<button onclick="switchTF('${tf}')" class="px-2 py-1 rounded text-xs font-medium transition ${tf===_chartTF?"bg-emerald-600 text-white":"bg-gray-800 text-gray-400 hover:bg-gray-700"}">${tf}</button>`).join("")}</div><div id="cc" class="w-full" style="height:500px"></div>`;requestAnimationFrame(()=>{CM.init("cc");_ci=true})}
+  if(currentTab==="config"&&!_cfgLoaded){mc.innerHTML=`<div id="cfgc" class="px-6 py-4"></div>`;requestAnimationFrame(()=>loadConfig())}
+  if(currentTab==="audit"&&!_ai){mc.innerHTML=`<div class="px-6 py-4 space-y-6"><div id="as"></div><div class="flex items-center gap-3 mb-2"><label class="text-xs text-gray-500">${t("From")}</label><input type="date" id="af" value="${auditFrom}" class="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-300"><label class="text-xs text-gray-500">${t("To")}</label><input type="date" id="at2" value="${auditTo}" class="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-300"><button onclick="applyAuditFilter()" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1 rounded text-xs font-medium">${t("Apply")}</button></div><div><h3 class="text-sm font-semibold text-gray-400 uppercase mb-2">${t("Equity Curve")}</h3><div id="ae" style="height:260px"></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><div><h3 class="text-sm font-semibold text-gray-400 uppercase mb-2">${t("Daily Stats")}</h3><div id="ad"></div></div><div><h3 class="text-sm font-semibold text-gray-400 uppercase mb-2">${t("Reason Distribution")}</h3><div id="ar"></div></div></div><div><h3 class="text-sm font-semibold text-gray-400 uppercase mb-2">${t("Recent Trades")}</h3><div class="overflow-x-auto" id="at"></div></div><div><h3 class="text-sm font-semibold text-gray-400 uppercase mb-2">${t("Decisions")}</h3><div class="overflow-x-auto" id="ad2"></div></div></div>`;_ai=true;requestAnimationFrame(()=>{setTimeout(()=>AM.load(),50)});if(!AM.rt)AM.rt=setInterval(()=>{if(currentTab==="audit")AM.load()},60000)}
+  if(currentTab==="settings"&&!_setLoaded){mc.innerHTML=`<div id="setc" class="px-6 py-4"></div>`;requestAnimationFrame(()=>loadSettings())}
+}
+
+async function refreshTableContent(){
+  const mc=document.getElementById("mc");if(!mc)return;
+  if(currentTab==="positions"){const pos=await get("/api/positions");mc.innerHTML=rPos(pos)}
+  else if(currentTab==="trades"){const tr=await get("/api/trades?limit=20");mc.innerHTML=rTrades(tr)}
+  else if(currentTab==="history"){const h=await get("/api/trades/history?limit=20");mc.innerHTML=rHist(h)}
+  else if(currentTab==="decisions"){const d=await get("/api/decisions?limit=20");mc.innerHTML=rDec(d)}
+}
+
+function toggleLang(){lang=lang==="en"?"zh":"en";localStorage.setItem("lang",lang);if(_authed){if(_layoutReady){renderTabs();renderTitle();activateTab()}else render()}else renderLoginGate()}
+
+// ==================== Card Auth (Login Gate) ====================
+const KM_LABEL={hour:"时卡",day:"天卡",week:"周卡",month:"月卡",season:"季卡",year:"年卡",longuse:"永久卡",single:"次数卡",free:"免费"};
+
+function formatCountdown(vipTs){
+  if(vipTs===0||_authKmtype==="longuse")return t("Permanent");
+  const rem=vipTs-Math.floor(Date.now()/1000);
+  if(rem<=0)return t("Expired");
+  const d=Math.floor(rem/86400),h=Math.floor((rem%86400)/3600),m=Math.floor((rem%3600)/60),s=rem%60;
+  if(d>0)return d+t("Day")+" "+h+"h "+m+"m";
+  if(h>0)return h+"h "+m+"m "+s+"s";
+  return m+"m "+s+"s";
+}
+
+function renderLoginGate(){
+  _authed=false;_layoutReady=false;
+  document.getElementById("app").innerHTML=`
+  <div class="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+    <div class="bg-gray-900 rounded-2xl border border-gray-800 p-8 max-w-md w-full shadow-2xl">
+      <div class="text-center mb-8">
+        <img src="/static/benmao.jpg" class="w-16 h-16 rounded-2xl object-cover shadow-xl mx-auto mb-4">
+        <h1 class="text-2xl font-bold text-gray-100 tracking-wide">${t("MT5-Ai Smart Engine")}</h1>
+        <p class="text-sm text-gray-500 mt-2">${t("Card Auth")}</p>
+      </div>
+      <div class="mb-4">
+        <input type="text" id="kami-input" placeholder="${t("Enter Card Key")}" autocomplete="off" spellcheck="false"
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-gray-200 placeholder-gray-600 focus:border-emerald-500 focus:outline-none text-center font-mono text-lg tracking-wider"
+          onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div id="login-error" class="text-sm text-rose-400 mb-3 text-center hidden"></div>
+      <button onclick="doLogin()" id="login-btn"
+        class="w-full bg-emerald-600 hover:bg-emerald-500 rounded-lg py-3 font-semibold transition text-white shadow-lg shadow-emerald-900/20">
+        ${t("Verify & Login")}
+      </button>
+      <a href="https://luoye.chyidc.cn/shop/2B5FKETT" target="_blank"
+        class="block w-full text-center mt-3 text-sm text-gray-400 hover:text-emerald-400 transition border border-gray-700 hover:border-emerald-800 rounded-lg py-2.5">
+        ${t("Buy Card Key")}
+      </a>
+      <div class="flex justify-center gap-3 mt-4">
+        <button onclick="toggleLang()" class="text-xs text-gray-500 hover:text-gray-300 transition">${lang==="en"?"中文":"EN"}</button>
+      </div>
+    </div>
+  </div>`;
+  setTimeout(()=>{const i=document.getElementById("kami-input");if(i)i.focus()},100);
+}
+
+async function doLogin(){
+  const kami=document.getElementById("kami-input").value.trim();
+  if(!kami)return;
+  const btn=document.getElementById("login-btn");
+  const err=document.getElementById("login-error");
+  btn.disabled=true;btn.textContent=t("Verifying...");
+  err.classList.add("hidden");
+  const r=await post("/api/auth/login",{kami});
+  if(r&&r.ok){
+    _authed=true;_authVip=r.vip||0;_authKmtype=r.kmtype||"";_authKtype=r.ktype||"";_authNote=r.note||"";
+    _layoutReady=false;currentTab="positions";
+    toast(t("Card Auth")+" - "+t("License")+': '+(KM_LABEL[_authKmtype]||_authKmtype),'success');
+    render();
+  }else{
+    const errMsg=(r&&r.msg)||"Verification failed";
+    err.textContent=errMsg;err.classList.remove("hidden");
+    toast(errMsg,'error');
+    btn.disabled=false;btn.textContent=t("Verify & Login");
+  }
+}
+
+async function doLogout(){
+  if(!await customConfirm(t("Logout"),t("Are you sure?")))return;
+  await post("/api/auth/logout");
+  _authed=false;_authVip=0;_authKmtype="";_authKtype="";_authNote="";
+  toast(t("Logout"),'info');
+  renderLoginGate();
+}
+
+let _cdInterval=null;
+function startCountdown(){
+  if(_cdInterval)clearInterval(_cdInterval);
+  _cdInterval=setInterval(()=>{
+    const el=document.getElementById("cd-time");
+    if(!el){clearInterval(_cdInterval);_cdInterval=null;return}
+    el.textContent=formatCountdown(_authVip);
+    if(_authVip>0&&_authVip<=Math.floor(Date.now()/1000)){
+      el.classList.add("text-rose-400");el.classList.remove("text-emerald-400","text-amber-400");
+      const lbl=document.getElementById("cd-label");if(lbl)lbl.textContent=t("Expired");
+    }else if(_authVip>0){
+      const rem=_authVip-Math.floor(Date.now()/1000);
+      if(rem<3600){el.classList.add("text-amber-400");el.classList.remove("text-emerald-400","text-rose-400")}
+      else{el.classList.add("text-emerald-400");el.classList.remove("text-amber-400","text-rose-400")}
+    }
+  },1000);
+}
+
+// ==================== Main render loop ====================
+async function render(){
+  if(!_authed){
+    const a=await get("/api/auth/status");
+    if(a&&a.authenticated){
+      _authed=true;_authVip=a.vip||0;_authKmtype=a.kmtype||"";_authKtype=a.ktype||"";_authNote=a.note||"";
+    }else{
+      renderLoginGate();return;
+    }
+  }
+
+  const st=await get("/api/status");
+  if(!st){document.getElementById("app").innerHTML=`<div class="max-w-7xl mx-auto p-6"><div class="bg-rose-900/30 border border-rose-800 rounded-xl p-6 text-center"><h2 class="text-rose-400 text-lg font-bold mb-2">${t("Connection Error")}</h2><p class="text-rose-300/70 text-sm">${t("Cannot reach API server. Make sure run.py is started.")}</p></div></div>`;_layoutReady=false;setTimeout(render,5000);return}
+  if(st.config&&st.config.symbol)_curSymbol=st.config.symbol;
+
+  // Show strategy switch error if any
+  if(st.switch_error&&!_switchErrShown){_switchErrShown=true;toast(t("Strategy switch failed")+": "+st.switch_error,'error',8000)}
+  if(!st.switch_error)_switchErrShown=false;
+
+  if(!_layoutReady){renderLayout();renderTabs();renderTitle();activateTab();startCountdown()}
+  renderHeader(st);renderSidebar(st);
+
+  // Refresh table content only for table tabs
+  if(["positions","trades","history","decisions"].includes(currentTab)){await refreshTableContent()}
+  // Refresh chart and audit on their tabs
+  if(currentTab==="chart"&&CM.chart){CM.load()}
+  if(currentTab==="audit"&&AM.eqC){AM.load()}
+
+  // Periodic auth check
+  if(_authVip>0&&_authVip<=Math.floor(Date.now()/1000)){
+    _authed=false;renderLoginGate();
+    toast(t("Session expired, please re-login"),'warn',5000);
+    const el=document.getElementById("login-error");if(el){el.textContent=t("Session expired, please re-login");el.classList.remove("hidden")}
+    return;
+  }
+
+  setTimeout(render,3000);
+}
+
+async function closePosition(ticket){const d=await post("/api/positions/"+ticket+"/close");if(d&&d.ok)toast(t("Close")+" ✓",'success');else toast(t("Close")+" ✗",'error');setTimeout(()=>{if(currentTab==="positions")refreshTableContent()},1500)}
+async function closeAllProfitable(){const d=await post("/api/positions/close-profitable");if(d&&d.ok)toast(d.closed+" "+t("positions")+" ✓",'success');else toast(t("Close")+" ✗",'error');setTimeout(()=>{if(currentTab==="positions")refreshTableContent()},1500)}
+async function testEmail(){const btn=document.getElementById("test-email-btn");if(btn){btn.disabled=true;btn.textContent="..."}const d=await post("/api/test-email");if(btn){btn.disabled=false;btn.textContent=t("Test Email")}if(d&&d.ok)toast(d.msg,'success',5000);else toast(d?d.msg:"Failed",'error',5000)}
+async function killswitch(){if(!await customConfirm(t("Killswitch"),t("Kill all positions and cancel all orders?")))return;const d=await post("/api/killswitch");if(d)toast((d.closed_positions||0)+" "+t("positions")+", "+(d.cancelled_orders||0)+" "+t("orders"),'success');else toast(t("Killswitch failed - check server"),'error')}
+
+async function testMT5(){
+  const btn=document.getElementById("mt5-test-btn");if(!btn)return;
+  btn.innerHTML=`<svg class="w-4 h-4 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>${t("Testing...")}`;
+  btn.disabled=true;
+  const r=await post("/api/mt5/test");
+  if(!r){btn.innerHTML=`<svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>${t("MT5 Disconnected")}`;toast(t("MT5 Disconnected"),'error');btn.disabled=false;return}
+  if(r.ok){const a=r.account||{};btn.innerHTML=`<svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>${t("MT5 Connected")}`;btn.title=`Login: ${a.login}\nName: ${a.name}\nServer: ${a.server}\nBalance: ${fmt(a.balance)}\nEquity: ${fmt(a.equity)}\nSymbols: ${r.symbols_total}`;toast(t("MT5 Connected")+' - '+a.login+' @ '+a.server,'success')}
+  else{btn.innerHTML=`<svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>${t("MT5 Disconnected")}`;btn.title=r.error||"";toast(t("MT5 Disconnected")+': '+(r.error||""),'error')}
+  btn.disabled=false;
+  setTimeout(()=>{btn.innerHTML=`<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>${t("Test Connection")}`;btn.title=""},8000);
+}
+
+render();
+</script>
+</body>
+</html>

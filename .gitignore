@@ -1,0 +1,30 @@
+# ===== 密钥 / 环境配置 =====
+.env
+*.env
+!.env.example
+
+# ===== 虚拟环境 / 内嵌 Python 运行时 =====
+venv/
+python32/
+__pycache__/
+*.pyc
+
+# ===== Node 依赖 =====
+node_modules/
+
+# ===== 打包产物 =====
+build/
+dist/
+*.exe
+
+# ===== 运行态数据（数据库 / 日志 / 状态 / 加密策略）=====
+data/
+*.log
+
+# ===== 第三方二进制与参考项目 =====
+lib/*.dll
+ref_projects/
+
+# ===== IDE / 工具 =====
+.idea/
+.trae/

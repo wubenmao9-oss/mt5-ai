@@ -1,0 +1,89 @@
+﻿//@version=5
+strategy("XAUUSD V3 策略", overlay=true, default_qty_type=strategy.fixed, default_qty_value=0.01, initial_capital=500, commission_type=strategy.commission.cash, commission_value=0.02, slippage=1)
+
+// ── 参数 ──
+adxLen  = input.int(14, "ADX周期", minval=7, maxval=28)
+bbLen   = input.int(20, "布林带周期", minval=10, maxval=50)
+bbSd    = input.float(2.0, "布林带标准差", minval=1.0, maxval=3.0)
+tpPts   = input.float(100.0, "止盈点数(100点=10U)", minval=10, maxval=300)
+touchLmt= input.int(3, "单方向最大触碰次数", minval=1, maxval=10)
+
+// ── 指标计算 ──
+[adx, pdi, ndi] = ta.adx(high, low, close, adxLen)
+[bbMid, bbUp, bbDn] = ta.bb(close, bbLen, bbSd)
+atr = ta.atr(adxLen)
+
+// ── H1 宏观过滤器 ──
+h1Sma20 = request.security(syminfo.tickerid, "60", ta.sma(close, 20))
+h1Sma50 = request.security(syminfo.tickerid, "60", ta.sma(close, 50))
+
+// ── 状态判断 ──
+adxRising = adx > adx[1]
+isTrending = adxRising and adx >= 20
+isRanging = adx < 23
+isNoTrade = adx >= 23 and adx < 25
+h1Bullish = h1Sma20 > h1Sma50
+h1Bearish = h1Sma20 < h1Sma50
+
+// ── 触碰计数器 ──
+var touchTop = 0
+var touchBot = 0
+bw = bbUp - bbDn
+tol = bw * 0.02
+touchedTop = high >= bbUp - tol
+touchedBot = low <= bbDn + tol
+
+if touchedTop
+    touchTop := math.min(touchTop + 1, 99)
+if touchedBot
+    touchBot := math.min(touchBot + 1, 99)
+if not touchedTop and high < bbUp and low > bbDn
+    touchTop := math.max(0, touchTop - 1)
+    touchBot := math.max(0, touchBot - 1)
+
+// ── 入场信号 ──
+buySignal = false
+sellSignal = false
+
+// 趋势模式：突破 + PDI/NDI + 实体确认
+if isTrending and not na(adx) and not na(bbUp)
+    body = math.abs(close - open)
+    if close > bbUp and pdi > ndi and body > atr * 0.3 and h1Bullish
+        buySignal := true
+    if close < bbDn and ndi > pdi and body > atr * 0.3 and h1Bearish
+        sellSignal := true
+
+// 震荡模式：触碰布林带 + 计数器 + H1方向
+if isRanging and not na(bbMid)
+    if touchedBot and touchBot < touchLmt and close < bbMid and h1Bullish
+        buySignal := true
+    if touchedTop and touchTop < touchLmt and close > bbMid and h1Bearish
+        sellSignal := true
+
+// ── 交易执行 ──
+if buySignal
+    sl = close - bw * 0.5
+    tp = close + tpPts * syminfo.mintick
+    strategy.entry("做多", strategy.long, comment="V3-L")
+    strategy.exit("做多离场", "做多", stop=sl, limit=tp)
+
+if sellSignal
+    sl = close + bw * 0.5
+    tp = close - tpPts * syminfo.mintick
+    strategy.entry("做空", strategy.short, comment="V3-S")
+    strategy.exit("做空离场", "做空", stop=sl, limit=tp)
+
+// ── 绘图 ──
+plot(bbMid, "中轨", color=color.blue, linewidth=1)
+plot(bbUp, "上轨", color=color.gray, linewidth=1)
+plot(bbDn, "下轨", color=color.gray, linewidth=1)
+plot(h1Sma20, "H1-SMA20", color=color.orange, linewidth=2)
+plot(h1Sma50, "H1-SMA50", color=color.purple, linewidth=2)
+bgcolor(isTrending ? color.new(color.green, 93) : na)
+bgcolor(isRanging ? color.new(color.blue, 93) : na)
+bgcolor(isNoTrade ? color.new(color.red, 93) : na)
+
+// ── 状态信息 ──
+if barstate.islast
+    s = "ADX:" + str.tostring(math.round(adx,1)) + " 状态:" + (isTrending ? "趋势" : isRanging ? "震荡" : "禁交") + " H1:" + (h1Bullish ? "多" : h1Bearish ? "空" : "平") + " ↑" + str.tostring(touchTop) + " ↓" + str.tostring(touchBot)
+    label.new(bar_index, high, s, style=label.style_label_down, color=color.white, textcolor=color.black, size=size.small)

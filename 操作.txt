@@ -1,0 +1,8 @@
+# 1. 复制环境变量配置，填入 AllTick Token
+cp .env.example .env
+
+# 2. （如需实盘）安装 MetaTrader5 并确保本地 MT4 已登录
+pip install MetaTrader5
+
+# 3. 运行演示（行情订阅 + K 线拉取）
+python main.py
